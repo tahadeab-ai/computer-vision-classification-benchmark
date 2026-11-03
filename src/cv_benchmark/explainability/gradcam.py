@@ -82,7 +82,7 @@ class GradCAM:
             align_corners=False,
         )
 
-        cam_np = cam.squeeze().cpu().numpy()
+        cam_np = cam.squeeze().detach().cpu().numpy()
         cam_min, cam_max = cam_np.min(), cam_np.max()
         if cam_max - cam_min > 1e-8:
             cam_np = (cam_np - cam_min) / (cam_max - cam_min)
