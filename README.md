@@ -1,5 +1,6 @@
 # Computer Vision Classification Benchmark
 
+[![GitHub Release](https://img.shields.io/github/v/release/tahadeab-ai/computer-vision-classification-benchmark?logo=github)](https://github.com/tahadeab-ai/computer-vision-classification-benchmark/releases/tag/v1.0.0)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Torchvision](https://img.shields.io/badge/Torchvision-0.15+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -95,15 +96,37 @@ Because deep learning training on CIFAR-100 across 6 architectures requires GPU 
 
 *(Empirically benchmarked on Google Colab hosted runtime with NVIDIA Tesla T4 15GB GPU, PyTorch 2.11+cu130, and CUDA 13.0 on CIFAR-100 test dataset)*
 
-| Architecture | Paradigm | Top-1 Acc (%) | Top-5 Acc (%) | Macro F1 | Total Params | Trainable Params | Mean Latency (ms) | Throughput (img/s) | Peak VRAM (MB) |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Custom CNN** | Scratch (4-stage) | 36.88% | 68.75% | 0.3535 | 0.767 M | 0.767 M | **2.31 ms** | **432.9** | **34.5 MB** |
-| **MobileNetV2** | Feature Extraction | 46.95% | 76.24% | 0.4544 | 2.352 M | 0.128 M | 5.15 ms | 194.3 | 38.4 MB |
-| **ResNet50** | Feature Extraction | 60.25% | 87.01% | 0.5963 | 23.713 M | 0.205 M | 6.33 ms | 157.9 | 120.8 MB |
-| **ResNet50** | **Fine-Tuning** | **71.67%** | **94.17%** | **0.7129** | 23.713 M | 23.713 M | 10.85 ms | 92.2 | 475.5 MB |
-| **EfficientNet-B0** | Feature Extraction | 55.17% | 83.17% | 0.5446 | 4.136 M | 0.128 M | 8.05 ms | 124.3 | 46.0 MB |
-| **VGG16** | Feature Extraction | 54.46% | 83.68% | 0.5400 | 134.670 M | 0.410 M | 16.83 ms | 59.4 | 562.5 MB |
-| **ViT-B/16** | Feature Extraction | **80.31%** | **96.45%** | **0.8023** | 85.876 M | 0.077 M | 15.03 ms | 66.5 | 354.4 MB |
+| Architecture | Paradigm | Top-1 Acc (%) | Top-5 Acc (%) | Macro F1 | Total Params | Trainable Params | Mean Latency (ms) | Throughput (img/s) | Peak VRAM (MB) | Pretrained Weights (v1.0.0) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Custom CNN** | Scratch (4-stage) | 36.88% | 68.75% | 0.3535 | 0.767 M | 0.767 M | **2.31 ms** | **432.9** | **34.5 MB** | [Download (8.8 MB)](https://github.com/tahadeab-ai/computer-vision-classification-benchmark/releases/download/v1.0.0/custom_cnn_scratch_cifar100.pt) |
+| **MobileNetV2** | Feature Extraction | 46.95% | 76.24% | 0.4544 | 2.352 M | 0.128 M | 5.15 ms | 194.3 | 38.4 MB | [Download (10.2 MB)](https://github.com/tahadeab-ai/computer-vision-classification-benchmark/releases/download/v1.0.0/mobilenet_v2_feature_extract_cifar100.pt) |
+| **ResNet50** | Feature Extraction | 60.25% | 87.01% | 0.5963 | 23.713 M | 0.205 M | 6.33 ms | 157.9 | 120.8 MB | [Download (92.3 MB)](https://github.com/tahadeab-ai/computer-vision-classification-benchmark/releases/download/v1.0.0/resnet50_feature_extract_cifar100.pt) |
+| **ResNet50** | **Fine-Tuning** | **71.67%** | **94.17%** | **0.7129** | 23.713 M | 23.713 M | 10.85 ms | 92.2 | 475.5 MB | [Download (271.8 MB)](https://github.com/tahadeab-ai/computer-vision-classification-benchmark/releases/download/v1.0.0/resnet50_finetuned_cifar100.pt) |
+| **EfficientNet-B0** | Feature Extraction | 55.17% | 83.17% | 0.5446 | 4.136 M | 0.128 M | 8.05 ms | 124.3 | 46.0 MB | [Download (17.1 MB)](https://github.com/tahadeab-ai/computer-vision-classification-benchmark/releases/download/v1.0.0/efficientnet_b0_feature_extract_cifar100.pt) |
+| **VGG16** | Feature Extraction | 54.46% | 83.68% | 0.5400 | 134.670 M | 0.410 M | 16.83 ms | 59.4 | 562.5 MB | [Download (516.9 MB)](https://github.com/tahadeab-ai/computer-vision-classification-benchmark/releases/download/v1.0.0/vgg16_feature_extract_cifar100.pt) |
+| **ViT-B/16** | Feature Extraction | **80.31%** | **96.45%** | **0.8023** | 85.876 M | 0.077 M | 15.03 ms | 66.5 | 354.4 MB | [Download (328.2 MB)](https://github.com/tahadeab-ai/computer-vision-classification-benchmark/releases/download/v1.0.0/vit_b_16_feature_extract_cifar100.pt) |
+
+---
+
+### Loading Published Weights
+
+All official model checkpoints are hosted on the [GitHub v1.0.0 Release](https://github.com/tahadeab-ai/computer-vision-classification-benchmark/releases/tag/v1.0.0).
+
+```python
+import torch
+from cv_benchmark.models import create_model
+
+# 1. Instantiate target model architecture
+model, _ = create_model("resnet50", num_classes=100, pretrained=False)
+
+# 2. Download and load checkpoint state dict
+checkpoint_url = "https://github.com/tahadeab-ai/computer-vision-classification-benchmark/releases/download/v1.0.0/resnet50_finetuned_cifar100.pt"
+checkpoint = torch.hub.load_state_dict_from_url(checkpoint_url, map_location="cpu")
+model.load_state_dict(checkpoint["model_state_dict"])
+model.eval()
+
+print("Loaded ResNet50 checkpoint successfully! Evaluated Top-1 Acc: 71.67%")
+```
 
 ---
 
