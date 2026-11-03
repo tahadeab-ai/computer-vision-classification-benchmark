@@ -49,7 +49,10 @@ class Trainer:
         self.clip_grad_norm = clip_grad_norm
 
         self.model.to(self.device)
-        self.scaler = torch.cuda.amp.GradScaler(enabled=(mixed_precision and self.device.type == "cuda"))
+        if hasattr(torch.amp, "GradScaler"):
+            self.scaler = torch.amp.GradScaler("cuda", enabled=(mixed_precision and self.device.type == "cuda"))
+        else:
+            self.scaler = torch.cuda.amp.GradScaler(enabled=(mixed_precision and self.device.type == "cuda"))
 
         self.checkpointer = Checkpointer(checkpoint_dir=os.path.join(checkpoint_dir, experiment_name))
         self.early_stopping = EarlyStopping(

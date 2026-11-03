@@ -58,7 +58,7 @@ def train_one_epoch(
 
         optimizer.zero_grad()
 
-        with torch.cuda.amp.autocast(enabled=amp_enabled):
+        with torch.amp.autocast(device_type="cuda" if use_cuda else "cpu", enabled=amp_enabled):
             outputs = model(images)
             loss = criterion(outputs, targets)
 
@@ -122,7 +122,7 @@ def validate_one_epoch(
         targets = targets.to(device, non_blocking=True)
         batch_size = images.size(0)
 
-        with torch.cuda.amp.autocast(enabled=amp_enabled):
+        with torch.amp.autocast(device_type="cuda" if use_cuda else "cpu", enabled=amp_enabled):
             outputs = model(images)
             loss = criterion(outputs, targets)
 
