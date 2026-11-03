@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import CIFAR100
 from sklearn.model_selection import StratifiedShuffleSplit
 
-from .dataset import TransformedSubset
+from .dataset import TransformedSubset, ensure_cifar100_downloaded
 from .transforms import get_transforms
 
 
@@ -31,9 +31,10 @@ def get_dataloaders(
     image_size: Tuple[int, int] = (224, 224),
 ) -> Dict[str, DataLoader]:
     """Build train, validation, and test DataLoaders with model-specific transforms."""
-    # Download raw datasets
-    raw_train_dataset = CIFAR100(root=data_dir, train=True, download=True)
-    raw_test_dataset = CIFAR100(root=data_dir, train=False, download=True)
+    # Ensure dataset is downloaded from high-speed mirror
+    ensure_cifar100_downloaded(data_dir)
+    raw_train_dataset = CIFAR100(root=data_dir, train=True, download=False)
+    raw_test_dataset = CIFAR100(root=data_dir, train=False, download=False)
 
     # Deterministic stratified split
     targets = np.array(raw_train_dataset.targets)
@@ -89,8 +90,9 @@ def get_smoke_test_dataloaders(
     image_size: Tuple[int, int] = (224, 224),
 ) -> Dict[str, DataLoader]:
     """Lightweight dataloader subset for immediate pipeline and smoke testing."""
-    raw_train_dataset = CIFAR100(root=data_dir, train=True, download=True)
-    raw_test_dataset = CIFAR100(root=data_dir, train=False, download=True)
+    ensure_cifar100_downloaded(data_dir)
+    raw_train_dataset = CIFAR100(root=data_dir, train=True, download=False)
+    raw_test_dataset = CIFAR100(root=data_dir, train=False, download=False)
 
     np.random.seed(seed)
     train_indices = np.random.choice(len(raw_train_dataset), size=train_size, replace=False)

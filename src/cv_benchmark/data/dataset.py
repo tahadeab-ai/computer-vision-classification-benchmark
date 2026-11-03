@@ -1,9 +1,37 @@
 import os
+import tarfile
+import urllib.request
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 from PIL import Image
 import torch
 from torchvision.datasets import CIFAR100
+
+CIFAR100_FAST_MIRROR = "https://huggingface.co/datasets/nakroy/cifar100-python/resolve/main/cifar-100-python.tar.gz"
+
+
+def ensure_cifar100_downloaded(data_dir: str = "./data") -> None:
+    """Download CIFAR-100 from high-speed mirror if not present or incomplete."""
+    os.makedirs(data_dir, exist_ok=True)
+    extracted_dir = os.path.join(data_dir, "cifar-100-python")
+    train_file = os.path.join(extracted_dir, "train")
+    test_file = os.path.join(extracted_dir, "test")
+
+    if os.path.exists(train_file) and os.path.exists(test_file):
+        return
+
+    archive_path = os.path.join(data_dir, "cifar-100-python.tar.gz")
+    if not os.path.exists(archive_path) or os.path.getsize(archive_path) < 100 * 1024 * 1024:
+        print(f"[Dataset] Downloading CIFAR-100 archive from high-speed CDN: {CIFAR100_FAST_MIRROR}")
+        opener = urllib.request.build_opener()
+        opener.addheaders = [("User-Agent", "Mozilla/5.0")]
+        urllib.request.install_opener(opener)
+        urllib.request.urlretrieve(CIFAR100_FAST_MIRROR, archive_path)
+
+    print(f"[Dataset] Extracting CIFAR-100 archive...")
+    with tarfile.open(archive_path, "r:gz") as tar:
+        tar.extractall(path=data_dir)
+    print(f"[Dataset] CIFAR-100 successfully extracted to {extracted_dir}")
 
 CIFAR100_FINE_CLASSES: List[str] = [
     "apple", "aquarium_fish", "baby", "bear", "beaver", "bed", "bee", "beetle",
@@ -32,8 +60,9 @@ class CIFAR100DatasetWrapper:
 
     def download_and_verify(self) -> Dict[str, Any]:
         """Download CIFAR-100 train and test sets, verify integrity and return summary."""
-        train_raw = CIFAR100(root=self.data_dir, train=True, download=True)
-        test_raw = CIFAR100(root=self.data_dir, train=False, download=True)
+        ensure_cifar100_downloaded(self.data_dir)
+        train_raw = CIFAR100(root=self.data_dir, train=True, download=False)
+        test_raw = CIFAR100(root=self.data_dir, train=False, download=False)
 
         train_data = train_raw.data
         train_targets = np.array(train_raw.targets)
