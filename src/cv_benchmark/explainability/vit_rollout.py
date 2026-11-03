@@ -15,18 +15,62 @@ class ViTAttentionRollout:
         self.model = model
         self.head_fusion = head_fusion
         self.discard_ratio = discard_ratio
-        self.attentions: List[torch.Tensor] = []
-        self.hooks = []
-        self._register_hooks()
 
-    def _register_hooks(self) -> None:
-        # Hook into PyTorch torchvision ViT encoder layers
-        for layer in self.model.encoder.layers:
-            # Self-attention module in torchvision ViT is layer.self_attention
-            def hook_fn(module, input, output):
-                # When output is tuple or tensor: in torchvision vit, self_attention returns (attn_output, attn_weights)
-                # or we hook the forward of self_attention
-                pass
+    def generate(self, input_tensor: torch.Tensor) -> np.ndarray:
+        """Compute spatial attention rollout heatmap for a single image tensor (1, C, H, W)."""
+        self.model.eval()
+        if input_tensor.dim() == 3:
+            input_tensor = input_tensor.unsqueeze(0)
+
+        device = next(self.model.parameters()).device
+        input_tensor = input_tensor.to(device)
+
+        # In torchvision ViT:
+        # 1. Conv_proj + class_token + position_embedding
+        x = self.model._process_input(input_tensor)
+        n = x.shape[0]
+        batch_class_token = self.model.class_token.expand(n, -1, -1)
+        x = torch.cat([batch_class_token, x], dim=1)
+        x = self.model.encoder.dropout(x + self.model.encoder.pos_embedding)
+
+        # Collect attention matrices across encoder blocks
+        attentions = []
+        with torch.no_grad():
+            for block in self.model.encoder.layers:
+                # Input to self attention after ln_1
+                normed = block.ln_1(x)
+                # Compute Q, K, V
+                mha = block.self_attention
+                embed_dim = mha.embed_dim
+                num_heads = mha.num_heads
+                head_dim = embed_dim // num_heads
+
+                qkv = F.linear(normed, mha.in_proj_weight, mha.in_proj_bias)
+                q, k, v = qkv.chunk(3, dim=-1)
+
+                q = q.contiguous().view(n, -1, num_heads, head_dim).transpose(1, 2)
+                k = k.contiguous().view(n, -1, num_heads, head_dim).transpose(1, 2)
+
+                attn_weights = torch.matmul(q, k.transpose(-2, -1)) / np.sqrt(head_dim)
+                attn_probs = F.softmax(attn_weights, dim=-1)  # (n, num_heads, seq_len, seq_len)
+                attentions.append(attn_probs)
+
+                # Standard block forward to continue sequence
+                attn_out, _ = mha(normed, normed, normed, need_weights=False)
+                x = x + block.dropout(attn_out)
+                x = x + block.mlp(block.ln_2(x))
+
+        mask = self.compute_rollout_from_attention_matrices(attentions)
+        # Interpolate mask to image dimensions
+        mask_t = torch.from_numpy(mask).unsqueeze(0).unsqueeze(0)
+        mask_resized = F.interpolate(
+            mask_t,
+            size=(input_tensor.shape[2], input_tensor.shape[3]),
+            mode="bilinear",
+            align_corners=False,
+        ).squeeze().numpy()
+
+        return mask_resized
 
     def compute_rollout_from_attention_matrices(
         self,

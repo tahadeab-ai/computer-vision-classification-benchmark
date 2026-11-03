@@ -19,7 +19,7 @@ from cv_benchmark.visualization import (
     plot_accuracy_vs_parameters,
     plot_cam_comparison,
 )
-from cv_benchmark.explainability import GradCAM, overlay_cam_on_image
+from cv_benchmark.explainability import GradCAM, overlay_cam_on_image, ViTAttentionRollout
 
 
 def main():
@@ -146,26 +146,33 @@ def main():
         }
         benchmark_records.append(record)
 
-        # 7. Explainability (Grad-CAM for CNNs)
+        # 7. Explainability (Grad-CAM for CNNs, Attention Rollout for ViT)
         target_layer = get_model_target_layer(model_name, model)
+        sample_imgs, sample_targets = next(iter(loaders["test"]))
+        img_t = sample_imgs[0:1].to(device)
+        class_name = CIFAR100_FINE_CLASSES[int(sample_targets[0].item())]
+        raw_img = sample_imgs[0].permute(1, 2, 0).numpy()
+        raw_img = (raw_img - raw_img.min()) / (raw_img.max() - raw_img.min() + 1e-8)
+
         if target_layer is not None:
             try:
                 gradcam = GradCAM(model=model, target_layer=target_layer)
-                # Take 1 sample from test loader
-                sample_imgs, sample_targets = next(iter(loaders["test"]))
-                img_t = sample_imgs[0:1].to(device)
                 cam = gradcam.generate(img_t, target_class=int(sample_targets[0].item()))
-
-                raw_img = sample_imgs[0].permute(1, 2, 0).numpy()
-                raw_img = (raw_img - raw_img.min()) / (raw_img.max() - raw_img.min() + 1e-8)
                 overlay = overlay_cam_on_image(raw_img, cam)
-
-                class_name = CIFAR100_FINE_CLASSES[int(sample_targets[0].item())]
                 cam_path = os.path.join(figures_dir, f"{model_name}_gradcam.png")
                 plot_cam_comparison(raw_img, cam, overlay, class_name, save_path=cam_path)
                 gradcam.remove_hooks()
             except Exception as e:
-                print(f"Explainability generation notice for {model_name}: {e}")
+                print(f"Explainability notice for {model_name}: {e}")
+        elif model_name == "vit_b_16":
+            try:
+                rollout = ViTAttentionRollout(model=model)
+                mask = rollout.generate(img_t)
+                overlay = overlay_cam_on_image(raw_img, mask)
+                cam_path = os.path.join(figures_dir, f"{model_name}_attention_rollout.png")
+                plot_cam_comparison(raw_img, mask, overlay, f"{class_name} (ViT Rollout)", save_path=cam_path)
+            except Exception as e:
+                print(f"ViT Rollout notice: {e}")
 
     # Aggregated Summary Tables & Plots
     df = pd.DataFrame(benchmark_records)
