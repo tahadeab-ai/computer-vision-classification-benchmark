@@ -151,7 +151,7 @@ def main():
         sample_imgs, sample_targets = next(iter(loaders["test"]))
         img_t = sample_imgs[0:1].to(device)
         class_name = CIFAR100_FINE_CLASSES[int(sample_targets[0].item())]
-        raw_img = sample_imgs[0].permute(1, 2, 0).numpy()
+        raw_img = sample_imgs[0].detach().cpu().permute(1, 2, 0).numpy()
         raw_img = (raw_img - raw_img.min()) / (raw_img.max() - raw_img.min() + 1e-8)
 
         if target_layer is not None:
