@@ -175,21 +175,36 @@ def main():
                 print(f"ViT Rollout notice: {e}")
 
     # Aggregated Summary Tables & Plots
-    df = pd.DataFrame(benchmark_records)
     csv_path = os.path.join(tables_dir, "benchmark_summary.csv")
     json_path = os.path.join(tables_dir, "benchmark_summary.json")
-    df.to_csv(csv_path, index=False)
+
+    existing_df = pd.DataFrame()
+    if os.path.exists(csv_path):
+        try:
+            existing_df = pd.read_csv(csv_path)
+        except Exception:
+            pass
+
+    new_df = pd.DataFrame(benchmark_records)
+    if not existing_df.empty:
+        # Replace or append by model_name
+        combined_df = pd.concat([existing_df[~existing_df["model_name"].isin(new_df["model_name"])], new_df], ignore_index=True)
+    else:
+        combined_df = new_df
+
+    combined_df.to_csv(csv_path, index=False)
+    combined_records = combined_df.to_dict(orient="records")
     with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(benchmark_records, f, indent=2)
+        json.dump(combined_records, f, indent=2)
 
     print("\n" + "=" * 70)
     print("BENCHMARK RESULTS SUMMARY:")
     print("=" * 70)
-    print(df.to_string())
+    print(combined_df.to_string())
 
     # Generate Pareto trade-off charts
-    plot_accuracy_vs_latency(benchmark_records, os.path.join(figures_dir, "pareto_accuracy_vs_latency.png"))
-    plot_accuracy_vs_parameters(benchmark_records, os.path.join(figures_dir, "pareto_accuracy_vs_parameters.png"))
+    plot_accuracy_vs_latency(combined_records, os.path.join(figures_dir, "pareto_accuracy_vs_latency.png"))
+    plot_accuracy_vs_parameters(combined_records, os.path.join(figures_dir, "pareto_accuracy_vs_parameters.png"))
 
     print(f"\nAll artifacts, tables, and figures successfully saved to {reports_dir}")
 
