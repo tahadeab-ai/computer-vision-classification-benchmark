@@ -1,0 +1,8 @@
+model_name,mode,top1_accuracy,top5_accuracy,f1_macro,f1_weighted,total_parameters_m,trainable_parameters_m,latency_mean_ms,latency_p95_ms,throughput_fps,peak_gpu_memory_mb
+custom_cnn,scratch,36.88,68.75,0.3535,0.3535,0.767,0.767,2.31,2.57,432.9,34.47
+mobilenet_v2,feature_extraction,46.95,76.24,0.4544,0.4544,2.352,0.128,5.15,5.71,194.3,38.42
+resnet50,feature_extraction,60.25,87.01,0.5963,0.5963,23.713,0.205,6.33,6.61,157.9,120.82
+efficientnet_b0,feature_extraction,55.17,83.17,0.5446,0.5446,4.136,0.128,8.05,9.07,124.3,46.04
+vgg16,feature_extraction,54.46,83.68,0.54,0.54,134.67,0.41,16.83,17.14,59.4,562.49
+vit_b_16,feature_extraction,80.31,96.45,0.8023,0.8023,85.876,0.077,15.03,15.57,66.5,354.36
+resnet50,fine_tuning,71.67,94.17,0.7129,0.7129,23.713,23.713,10.85,13.7,92.2,475.53
