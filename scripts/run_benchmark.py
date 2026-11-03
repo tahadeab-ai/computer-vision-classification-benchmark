@@ -28,6 +28,7 @@ def main():
     parser.add_argument("--models", nargs="+", default=["custom_cnn", "mobilenet_v2", "resnet50", "efficientnet_b0", "vgg16", "vit_b_16"])
     parser.add_argument("--smoke", action="store_true", help="Run with smoke test subsets for quick validation")
     parser.add_argument("--epochs", type=int, default=None)
+    parser.add_argument("--mode", type=str, default=None, choices=["scratch", "feature_extraction", "fine_tuning"])
     args = parser.parse_args()
 
     cfg = load_config()
@@ -52,7 +53,7 @@ def main():
 
         is_custom = model_name == "custom_cnn"
         image_size = (32, 32) if is_custom else (224, 224)
-        mode = "scratch" if is_custom else "feature_extraction"
+        mode = args.mode or ("scratch" if is_custom else "feature_extraction")
         batch_size = cfg.get("training", {}).get("batch_size", {}).get(model_name, 32)
         epochs = args.epochs or (1 if args.smoke else (15 if is_custom else 8))
 
@@ -81,12 +82,16 @@ def main():
         print(f"Model: {model_name} | Total Params: {total_p:,} | Trainable: {trainable_p:,}")
 
         # 3. Optimizer & Scheduler
-        lr = 1e-3
-        optimizer = torch.optim.AdamW(
-            [p for p in model.parameters() if p.requires_grad],
-            lr=lr,
-            weight_decay=1e-4,
-        )
+        if mode == "fine_tuning":
+            param_groups = get_parameter_groups(model, head_names, backbone_lr=1e-5, head_lr=1e-4)
+            optimizer = torch.optim.AdamW(param_groups, weight_decay=1e-4)
+        else:
+            lr = 1e-3
+            optimizer = torch.optim.AdamW(
+                [p for p in model.parameters() if p.requires_grad],
+                lr=lr,
+                weight_decay=1e-4,
+            )
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
         criterion = nn.CrossEntropyLoss()
 
@@ -187,8 +192,11 @@ def main():
 
     new_df = pd.DataFrame(benchmark_records)
     if not existing_df.empty:
-        # Replace or append by model_name
-        combined_df = pd.concat([existing_df[~existing_df["model_name"].isin(new_df["model_name"])], new_df], ignore_index=True)
+        # Deduplicate on (model_name, mode)
+        merged_keys = new_df["model_name"] + "_" + new_df["mode"]
+        existing_keys = existing_df["model_name"] + "_" + existing_df["mode"]
+        filtered_existing = existing_df[~existing_keys.isin(merged_keys)]
+        combined_df = pd.concat([filtered_existing, new_df], ignore_index=True)
     else:
         combined_df = new_df
 
