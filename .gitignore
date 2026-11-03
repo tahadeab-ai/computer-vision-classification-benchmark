@@ -50,8 +50,8 @@ htmlcov/
 .mypy_cache/
 
 # Datasets and large artifacts
-data/
-raw_data/
+/data/
+/raw_data/
 cifar-100-python/
 *.tar.gz
 *.zip
