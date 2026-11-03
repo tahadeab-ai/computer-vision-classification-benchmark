@@ -1,0 +1,66 @@
+training:
+  experiment_name: "cifar100_cv_benchmark"
+  output_dir: "./reports"
+  checkpoint_dir: "./checkpoints"
+  tensorboard_dir: "./runs"
+  seed: 42
+  device: "cuda" # Auto-falls back to cpu if cuda unavailable
+  mixed_precision: true # PyTorch AMP (torch.cuda.amp.autocast)
+  gradient_clip_norm: 1.0
+
+  # Batch sizes calibrated for Colab 15GB T4 GPU
+  batch_size:
+    custom_cnn: 128
+    vgg16: 64
+    mobilenet_v2: 128
+    resnet50: 64
+    efficientnet_b0: 64
+    vit_b_16: 32
+
+  # Scratch Training (Custom CNN)
+  scratch:
+    epochs: 25
+    optimizer: "AdamW"
+    lr: 0.001
+    weight_decay: 0.0001
+    scheduler: "CosineAnnealingLR"
+    scheduler_params:
+      T_max: 25
+      eta_min: 1.0e-6
+
+  # Feature Extraction (Frozen backbone, train head only)
+  feature_extraction:
+    epochs: 10
+    optimizer: "AdamW"
+    lr: 0.001
+    weight_decay: 0.0001
+    scheduler: "CosineAnnealingLR"
+    scheduler_params:
+      T_max: 10
+      eta_min: 1.0e-5
+
+  # Fine-Tuning (Unfreeze backbone with lower LR)
+  fine_tuning:
+    epochs: 15
+    optimizer: "AdamW"
+    backbone_lr: 1.0e-5
+    head_lr: 1.0e-4
+    weight_decay: 0.0001
+    scheduler: "CosineAnnealingLR"
+    scheduler_params:
+      T_max: 15
+      eta_min: 1.0e-6
+
+  # Early stopping & Checkpointing
+  early_stopping:
+    enabled: true
+    patience: 5
+    min_delta: 0.001
+    monitor: "val_loss"
+    mode: "min"
+
+  # Smoke test overrides
+  smoke_test:
+    epochs: 1
+    batch_size: 16
+    subset_steps: 2

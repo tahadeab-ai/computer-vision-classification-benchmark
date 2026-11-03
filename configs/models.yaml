@@ -1,0 +1,60 @@
+models:
+  custom_cnn:
+    name: "custom_cnn"
+    family: "scratch"
+    pretrained: false
+    input_size: [3, 32, 32]
+    num_classes: 100
+    dropout_rate: 0.3
+    channels: [32, 64, 128, 256]
+
+  vgg16:
+    name: "vgg16"
+    family: "cnn"
+    pretrained: true
+    weights: "VGG16_Weights.IMAGENET1K_V1"
+    input_size: [3, 224, 224]
+    num_classes: 100
+    dropout_rate: 0.5
+    target_cam_layer: "features.28" # Last conv layer in VGG16
+
+  mobilenet_v2:
+    name: "mobilenet_v2"
+    family: "lightweight_cnn"
+    pretrained: true
+    weights: "MobileNet_V2_Weights.IMAGENET1K_V2"
+    input_size: [3, 224, 224]
+    num_classes: 100
+    dropout_rate: 0.2
+    target_cam_layer: "features.18.0" # Last pointwise conv layer
+
+  resnet50:
+    name: "resnet50"
+    family: "residual_cnn"
+    pretrained: true
+    weights: "ResNet50_Weights.IMAGENET1K_V2"
+    input_size: [3, 224, 224]
+    num_classes: 100
+    dropout_rate: 0.3
+    target_cam_layer: "layer4.2.conv3" # Final bottleneck conv layer
+
+  efficientnet_b0:
+    name: "efficientnet_b0"
+    family: "compound_cnn"
+    pretrained: true
+    weights: "EfficientNet_B0_Weights.IMAGENET1K_V1"
+    input_size: [3, 224, 224]
+    num_classes: 100
+    dropout_rate: 0.2
+    target_cam_layer: "features.8.0" # Final conv stage
+
+  vit_b_16:
+    name: "vit_b_16"
+    family: "transformer"
+    pretrained: true
+    weights: "ViT_B_16_Weights.IMAGENET1K_V1"
+    input_size: [3, 224, 224]
+    num_classes: 100
+    dropout_rate: 0.1
+    patch_size: 16
+    explainability_method: "attention_rollout"
